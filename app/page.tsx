@@ -1,49 +1,27 @@
-'use client';
+import Link from 'next/link';
 
-import { useState } from 'react';
-
-export default function TokenDemo() {
-  const [text, setText] = useState('');
-
-  const estimateTokens = (str: string) => {
-    const englishWords = str.match(/[a-zA-Z]+/g)?.length || 0;
-    const chineseChars = str.match(/[\u4e00-\u9fa5]/g)?.length || 0;
-    return Math.ceil(englishWords * 1.3 + chineseChars * 0.5);
-  };
+export default function Home() {
+  const lessons = [
+    { href: '/lesson1', title: '第一课：什么是 Token？', desc: '了解 AI 处理文本的最小单位' },
+    { href: '/lesson2', title: '第二课：System Prompt vs User Prompt', desc: '定义 AI 角色与行为' },
+  ];
 
   return (
-    <div className="min-h-screen p-8 bg-gray-50">
-      <h1 className="text-3xl font-bold mb-4">第一课：什么是 Token？</h1>
+    <div className="min-h-screen p-8 bg-white">
+      <h1 className="text-3xl font-bold mb-2 text-gray-900">LLM API 学习项目</h1>
+      <p className="text-gray-500 mb-8">循序渐进掌握大模型 API 调用</p>
 
-      <div className="bg-white p-6 rounded-lg shadow mb-4">
-        <p className="mb-4 text-gray-700">
-          Token 是 AI 模型处理文本的最小单位。输入文字试试：
-        </p>
-
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          className="w-full h-32 p-3 border rounded"
-          placeholder="输入一些文字..."
-        />
-
-        <div className="mt-4 p-4 bg-blue-50 rounded">
-          <p className="text-lg">
-            估算 Token 数：<span className="font-bold text-blue-600">{estimateTokens(text)}</span>
-          </p>
-          <p className="text-sm text-gray-600 mt-2">
-            字符数：{text.length}
-          </p>
-        </div>
-      </div>
-
-      <div className="bg-yellow-50 p-4 rounded">
-        <h3 className="font-bold mb-2">💡 关键点：</h3>
-        <ul className="list-disc ml-6 space-y-1">
-          <li>1 个英文单词 ≈ 1-2 tokens</li>
-          <li>1 个中文字 ≈ 0.5-1 token</li>
-          <li>API 按 token 计费，不是按字符</li>
-        </ul>
+      <div className="space-y-3">
+        {lessons.map((lesson) => (
+          <Link
+            key={lesson.href}
+            href={lesson.href}
+            className="block p-4 rounded-lg border border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-colors"
+          >
+            <div className="font-bold text-gray-900">{lesson.title}</div>
+            <div className="text-sm text-gray-500 mt-1">{lesson.desc}</div>
+          </Link>
+        ))}
       </div>
     </div>
   );
