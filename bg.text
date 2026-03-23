@@ -1,0 +1,4 @@
+ 我现在想在这个目录下创建一个项目去学习学会调用大模型 API.核心技能为LLMAPI调用，Prompt Engieering，streaming输出，要用的模 型为
+OpenAi APi，Anthropic Claude Api，学习内容为1 什么是token，contxt，2 system/user prompt 3 tempreature，max tokens 4 streaming
+response。帮助我一起学习吧，我们从创建项目开始，点滴进行，循序渐进，让我全部学会这些，练习项目：做一个AI聊天网站，类似chatGPT，技术栈
+ next.js openAI API react.功能：输入问题 ai回答，流式输出
