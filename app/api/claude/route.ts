@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
   });
 
   const stream = await anthropic.messages.stream({
-    model: 'claude-3-5-sonnet-20241022',
+    model: 'claude-sonnet-4-6-medium',
     max_tokens: maxTokens,
     temperature,
     messages,
