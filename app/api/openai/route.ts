@@ -2,7 +2,7 @@ import OpenAI from 'openai';
 import { NextRequest } from 'next/server';
 
 export async function POST(req: NextRequest) {
-  const { messages, temperature = 0.7, maxTokens = 1000 } = await req.json();
+  const { messages, model = 'gpt-3.5-turbo', temperature = 0.7, maxTokens = 1000 } = await req.json();
 
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
   });
 
   const stream = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model,
     messages,
     temperature,
     max_tokens: maxTokens,

@@ -7,6 +7,12 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { saveConversation, getConversations, deleteConversation, generateId, generateTitle, type Message, type Conversation } from '../lib/storage';
 
+const MODELS = [
+  { id: 'gpt-4.1-mini', name: 'gpt-4.1-mini', provider: 'openai' },
+  { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', provider: 'openai' },
+  { id: 'claude-sonnet-4-5-20250929-thinking', name: 'claude-sonnet-4-5-20250929-thinking', provider: 'claude' },
+];
+
 export default function ChatApp() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentId, setCurrentId] = useState<string>('');
@@ -15,9 +21,21 @@ export default function ChatApp() {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState<number | null>(null);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
+  const [selectedModel, setSelectedModel] = useState('gpt-3.5-turbo');
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const getApiRoute = (modelId: string) => {
+    const model = MODELS.find(m => m.id === modelId);
+    return model?.provider === 'claude' ? '/api/claude' : '/api/openai';
+  };
 
   // 初始化：加载历史对话
   useEffect(() => {
+    if (!mounted) return;
     const saved = getConversations();
     setConversations(saved);
     if (saved.length > 0) {
@@ -27,11 +45,11 @@ export default function ChatApp() {
       const newId = generateId();
       setCurrentId(newId);
     }
-  }, []);
+  }, [mounted]);
 
   // 自动保存当前对话
   useEffect(() => {
-    if (!currentId || messages.length === 0) return;
+    if (!mounted || !currentId || messages.length === 0) return;
 
     const conversation: Conversation = {
       id: currentId,
@@ -105,11 +123,12 @@ export default function ChatApp() {
     setAbortController(controller);
 
     try {
-      const res = await fetch('/api/openai', {
+      const res = await fetch(getApiRoute(selectedModel), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: newMessages,
+          model: selectedModel,
           temperature: 0.7,
           maxTokens: 1000
         }),
@@ -157,11 +176,12 @@ export default function ChatApp() {
     setAbortController(controller);
 
     try {
-      const res = await fetch('/api/openai', {
+      const res = await fetch(getApiRoute(selectedModel), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: [...messages, userMessage],
+          model: selectedModel,
           temperature: 0.7,
           maxTokens: 1000
         }),
@@ -242,8 +262,26 @@ export default function ChatApp() {
       {/* 右侧主区域 */}
       <div className="flex-1 flex flex-col">
         <div className="bg-blue-600 text-white p-4 shadow">
-          <h1 className="text-2xl font-bold">AI 聊天助手</h1>
-          <p className="text-sm text-blue-100">类似 ChatGPT 的对话应用</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">AI 聊天助手</h1>
+              <p className="text-sm text-blue-100">类似 ChatGPT 的对话应用</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm">模型：</label>
+              <select
+                value={selectedModel}
+                onChange={(e) => setSelectedModel(e.target.value)}
+                className="px-3 py-2 bg-white text-gray-900 rounded-lg border-2 border-blue-400 focus:outline-none focus:border-blue-300"
+              >
+                {MODELS.map(model => (
+                  <option key={model.id} value={model.id}>
+                    {model.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">

@@ -2,7 +2,8 @@ import Anthropic from '@anthropic-ai/sdk';
 import { NextRequest } from 'next/server';
 
 export async function POST(req: NextRequest) {
-  const { messages, temperature = 0.7, maxTokens = 1000 } = await req.json();
+  const { messages, model = 'claude-3-5-sonnet-20241022', temperature = 0.7, maxTokens = 1000 } = await req.json();
+
 
   const anthropic = new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY,
@@ -10,7 +11,7 @@ export async function POST(req: NextRequest) {
   });
 
   const stream = await anthropic.messages.stream({
-    model: 'claude-sonnet-4-6-medium',
+    model,
     max_tokens: maxTokens,
     temperature,
     messages,
