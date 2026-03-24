@@ -14,6 +14,7 @@ export default function ChatApp() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState<number | null>(null);
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
 
   // 初始化：加载历史对话
   useEffect(() => {
@@ -85,6 +86,13 @@ export default function ChatApp() {
     }
   };
 
+  const handleStop = () => {
+    if (abortController) {
+      abortController.abort();
+      setAbortController(null);
+    }
+  };
+
   const handleRegenerate = async () => {
     if (messages.length < 2 || loading) return;
 
@@ -92,6 +100,9 @@ export default function ChatApp() {
     const newMessages = messages.slice(0, -1);
     setMessages(newMessages);
     setLoading(true);
+
+    const controller = new AbortController();
+    setAbortController(controller);
 
     try {
       const res = await fetch('/api/openai', {
@@ -101,7 +112,8 @@ export default function ChatApp() {
           messages: newMessages,
           temperature: 0.7,
           maxTokens: 1000
-        })
+        }),
+        signal: controller.signal
       });
 
       const reader = res.body?.getReader();
@@ -122,9 +134,14 @@ export default function ChatApp() {
         });
       }
     } catch (error) {
-      setMessages(prev => [...prev, { role: 'assistant', content: '请求失败：' + (error as Error).message }]);
+      if ((error as Error).name === 'AbortError') {
+        // 用户中断，保留部分内容
+      } else {
+        setMessages(prev => [...prev, { role: 'assistant', content: '请求失败：' + (error as Error).message }]);
+      }
     } finally {
       setLoading(false);
+      setAbortController(null);
     }
   };
 
@@ -136,6 +153,9 @@ export default function ChatApp() {
     setInput('');
     setLoading(true);
 
+    const controller = new AbortController();
+    setAbortController(controller);
+
     try {
       const res = await fetch('/api/openai', {
         method: 'POST',
@@ -144,7 +164,8 @@ export default function ChatApp() {
           messages: [...messages, userMessage],
           temperature: 0.7,
           maxTokens: 1000
-        })
+        }),
+        signal: controller.signal
       });
 
       const reader = res.body?.getReader();
@@ -165,9 +186,14 @@ export default function ChatApp() {
         });
       }
     } catch (error) {
-      setMessages(prev => [...prev, { role: 'assistant', content: '请求失败：' + (error as Error).message }]);
+      if ((error as Error).name === 'AbortError') {
+        // 用户中断，保留部分内容
+      } else {
+        setMessages(prev => [...prev, { role: 'assistant', content: '请求失败：' + (error as Error).message }]);
+      }
     } finally {
       setLoading(false);
+      setAbortController(null);
     }
   };
 
@@ -315,13 +341,22 @@ export default function ChatApp() {
               className="flex-1 p-3 border rounded-lg text-gray-900"
               disabled={loading}
             />
-            <button
-              onClick={handleSend}
-              disabled={loading || !input.trim()}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 disabled:bg-gray-300"
-            >
-              发送
-            </button>
+            {loading ? (
+              <button
+                onClick={handleStop}
+                className="px-6 py-3 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700"
+              >
+                ⏹ 停止
+              </button>
+            ) : (
+              <button
+                onClick={handleSend}
+                disabled={!input.trim()}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 disabled:bg-gray-300"
+              >
+                发送
+              </button>
+            )}
           </div>
         </div>
       </div>

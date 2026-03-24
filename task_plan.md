@@ -11,11 +11,11 @@
 - [ ] 支持 OpenAI 和 Claude 两个 API
 
 ## 当前阶段
-阶段 1
+阶段 5
 
 ## 实施阶段
 
-### 阶段 1: 分析现有代码结构 [pending]
+### 阶段 1: 分析现有代码结构 [complete]
 **目标：** 理解当前流式请求的实现方式
 
 **操作：**
@@ -28,7 +28,7 @@
 - 已记录流式请求的工作原理
 - 已确定 AbortController 的注入点
 
-### 阶段 2: 实现 AbortController 状态管理 [pending]
+### 阶段 2: 实现 AbortController 状态管理 [complete]
 **目标：** 在前端添加中断控制器
 
 **操作：**
@@ -40,7 +40,7 @@
 - AbortController 正确初始化
 - 请求完成后正确清理
 
-### 阶段 3: 修改 API 调用逻辑 [pending]
+### 阶段 3: 修改 API 调用逻辑 [complete]
 **目标：** 将 signal 传递给 fetch 请求
 
 **操作：**
@@ -52,7 +52,7 @@
 - Fetch 请求可以被中断
 - 部分内容被保留
 
-### 阶段 4: 添加停止按钮 UI [pending]
+### 阶段 4: 添加停止按钮 UI [complete]
 **目标：** 在生成时显示停止按钮
 
 **操作：**

@@ -9,26 +9,48 @@
 - 中断：`controller.abort()`
 - 错误：抛出 `AbortError`（name: 'AbortError'）
 
-### 当前实现分析
+### 当前实现分析（已完成代码审查）
+
+**两个 fetch 调用位置：**
+1. `handleSend()` - 第 140 行：发送新消息
+2. `handleRegenerate()` - 第 97 行：重新生成回复
+
 **流式请求模式：**
 ```typescript
-const response = await fetch('/api/openai', {
+// handleSend 中（第 140-168 行）
+const res = await fetch('/api/openai', {
   method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ messages, temperature, maxTokens })
 });
-const reader = response.body.getReader();
-// 读取流式数据块...
+const reader = res.body?.getReader();
+const decoder = new TextDecoder();
+let assistantContent = '';
+
+setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+
+while (reader) {
+  const { done, value } = await reader.read();
+  if (done) break;
+  const text = decoder.decode(value);
+  assistantContent += text;
+  setMessages(prev => {
+    const newMessages = [...prev];
+    newMessages[newMessages.length - 1].content = assistantContent;
+    return newMessages;
+  });
+}
 ```
 
-**注入点：**
-在 fetch options 中添加 `signal`：
-```typescript
-const response = await fetch('/api/openai', {
-  method: 'POST',
-  body: JSON.stringify({ messages, temperature, maxTokens }),
-  signal: abortController.signal  // ← 添加这行
-});
-```
+**注入点确认：**
+需要在两处 fetch 调用中添加 `signal`：
+- 第 140 行的 fetch（handleSend）
+- 第 97 行的 fetch（handleRegenerate）
+
+**关键发现：**
+- 部分内容已经在 `assistantContent` 变量中累积
+- 中断时自动保留已累积的内容（无需额外处理）
+- `finally` 块会清理 loading 状态
 
 ### 错误处理模式
 ```typescript

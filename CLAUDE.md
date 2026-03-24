@@ -123,16 +123,5 @@ If API fails:
 4. **即时反馈** - 每一步都验证效果
 5. **知识关联** - 关联已学过的内容
 
-## Current Features Implemented
-- ✅ 对话历史管理（localStorage）
-- ✅ 复制/重新生成消息
-- ✅ Markdown 渲染 + 代码高亮
-- ✅ 流式输出
-- ✅ 多对话切换
-
-## Next Features (see FEATURES.md)
-- 停止生成（AbortController）
-- 多模型切换
-- 参数调节面板
-- 深色模式
-- 图片上传（多模态）
+## Feature Status
+查看 FEATURES.md 了解完整功能列表和实现状态。
