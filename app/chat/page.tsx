@@ -1,6 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { saveConversation, getConversations, deleteConversation, generateId, generateTitle, type Message, type Conversation } from '../lib/storage';
 
 export default function ChatApp() {
@@ -9,6 +13,7 @@ export default function ChatApp() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState<number | null>(null);
 
   // 初始化：加载历史对话
   useEffect(() => {
@@ -67,6 +72,59 @@ export default function ChatApp() {
         setCurrentId(newId);
         setMessages([]);
       }
+    }
+  };
+
+  const handleCopy = async (content: string, index: number) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopied(index);
+      setTimeout(() => setCopied(null), 2000);
+    } catch (error) {
+      console.error('复制失败:', error);
+    }
+  };
+
+  const handleRegenerate = async () => {
+    if (messages.length < 2 || loading) return;
+
+    // 删除最后一条 AI 回复
+    const newMessages = messages.slice(0, -1);
+    setMessages(newMessages);
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/openai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: newMessages,
+          temperature: 0.7,
+          maxTokens: 1000
+        })
+      });
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      let assistantContent = '';
+
+      setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+
+      while (reader) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const text = decoder.decode(value);
+        assistantContent += text;
+        setMessages(prev => {
+          const newMessages = [...prev];
+          newMessages[newMessages.length - 1].content = assistantContent;
+          return newMessages;
+        });
+      }
+    } catch (error) {
+      setMessages(prev => [...prev, { role: 'assistant', content: '请求失败：' + (error as Error).message }]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -172,15 +230,63 @@ export default function ChatApp() {
 
           {messages.map((msg, idx) => (
             <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[70%] p-4 rounded-lg ${
+              <div className={`max-w-[70%] ${
                 msg.role === 'user'
                   ? 'bg-blue-600 text-white'
                   : 'bg-white text-gray-900 border'
-              }`}>
+              } p-4 rounded-lg`}>
                 <div className="text-xs mb-1 opacity-70">
                   {msg.role === 'user' ? '👤 你' : '🤖 AI'}
                 </div>
-                <div className="whitespace-pre-wrap">{msg.content}</div>
+                {msg.role === 'user' ? (
+                  <div className="whitespace-pre-wrap">{msg.content}</div>
+                ) : (
+                  <div className="prose prose-sm max-w-none">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        code({ className, children, ...props }) {
+                          const match = /language-(\w+)/.exec(className || '');
+                          const isBlock = !!match;
+                          return isBlock ? (
+                            <SyntaxHighlighter
+                              style={oneDark}
+                              language={match[1]}
+                              PreTag="div"
+                            >
+                              {String(children).replace(/\n$/, '')}
+                            </SyntaxHighlighter>
+                          ) : (
+                            <code className="bg-gray-100 px-1 py-0.5 rounded text-sm text-red-600" {...props}>
+                              {children}
+                            </code>
+                          );
+                        },
+                      }}
+                    >
+                      {msg.content}
+                    </ReactMarkdown>
+                  </div>
+                )}
+
+                {msg.role === 'assistant' && msg.content && (
+                  <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200">
+                    <button
+                      onClick={() => handleCopy(msg.content, idx)}
+                      className="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700"
+                    >
+                      {copied === idx ? '✓ 已复制' : '📋 复制'}
+                    </button>
+                    {idx === messages.length - 1 && !loading && (
+                      <button
+                        onClick={handleRegenerate}
+                        className="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700"
+                      >
+                        🔄 重新生成
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           ))}
